@@ -28,18 +28,21 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.AuthResult;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
+import java.util.Objects;
 import java.util.UUID;
 
 public class AddOrEditStaffFragment extends BaseFragment {
     FragmentAddStaffBinding addOrEditStaffFragment;
     Uri uri;
     NhanVien nhanVien;
-    private String[] arr = new String[3];
+    private String[] arr = new String[2];
 
     ActivityResultLauncher<Intent> activityResultLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
@@ -68,9 +71,8 @@ public class AddOrEditStaffFragment extends BaseFragment {
             nhanVien = (NhanVien) bundle.getSerializable("staff");
         }
 
-        arr[0]= getResources().getString(R.string.sales_agent);
-        arr[1]= getResources().getString(R.string.supervisory_staff);
-        arr[2]= getResources().getString(R.string.Counselor);
+        arr[0]= getResources().getString(R.string.staff);
+        arr[1]= getResources().getString(R.string.admin);
 
         initEvents();
         initSpinner();
@@ -85,10 +87,10 @@ public class AddOrEditStaffFragment extends BaseFragment {
     private void setData(NhanVien nhanVien) {
         if (nhanVien != null) {
             addOrEditStaffFragment.txtHoTen.setText(nhanVien.getHoTen());
-            addOrEditStaffFragment.txtPhone.setText(nhanVien.getSDT());
             addOrEditStaffFragment.txtEmail.setText(nhanVien.getEmail());
             addOrEditStaffFragment.tvAddStaffAddress.setText(nhanVien.getDiaChi());
             addOrEditStaffFragment.titleAddOrUpdateStaff.setText(getResources().getText(R.string.update_staff));
+            addOrEditStaffFragment.txtEmail.setEnabled(false);
             GlideUtils.loadUrl(nhanVien.getLinkAvt(), addOrEditStaffFragment.avatar);
         }
     }
@@ -107,7 +109,7 @@ public class AddOrEditStaffFragment extends BaseFragment {
         addOrEditStaffFragment.avatar.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                openGallery();
+              //  openGallery();
             }
         });
 
@@ -126,11 +128,33 @@ public class AddOrEditStaffFragment extends BaseFragment {
         activityResultLauncher.launch(photoPicker);
     }
 
+    private boolean isNameEmpty(){
+        return addOrEditStaffFragment.txtHoTen.getText().toString().isEmpty();
+    }
+
+    private boolean isEmaimEmpty(){
+        return addOrEditStaffFragment.txtEmail.getText().toString().isEmpty();
+    }
+
+
+    private boolean isAddressEmpty(){
+        return addOrEditStaffFragment.tvAddStaffAddress.getText().toString().isEmpty();
+    }
+
     private void addOrUpdateStaff() {
 
-        String regex = "\\d+";
-        if (!addOrEditStaffFragment.txtPhone.getText().toString().matches(regex)){
-            showMessage("so dien thoai khong hop le");
+        if (isNameEmpty()){
+            showMessage("Ten khong duoc trong");
+            return;
+        }
+
+        if (isEmaimEmpty()){
+            showMessage("Email khong duoc trong");
+            return;
+        }
+
+        if (isAddressEmpty()){
+            showMessage("Dia chia khong duoc trong");
             return;
         }
 
@@ -141,17 +165,8 @@ public class AddOrEditStaffFragment extends BaseFragment {
             return;
         }
 
-        StorageReference storageReference = FirebaseStorage.getInstance().getReference().child("Staff")
-                .child(uri.getLastPathSegment());
-        storageReference.putFile(uri).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
-            @Override
-            public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-                Task<Uri> uriTask = taskSnapshot.getStorage().getDownloadUrl();
-                while (!uriTask.isComplete()) ;
-                Uri urlImage = uriTask.getResult();
-
                 NhanVien nhanVien = getDataStaff();
-                nhanVien.setLinkAvt(urlImage.toString());
+                createAuthUser(nhanVien);
 
                 FirebaseDatabase.getInstance().getReference("Staff").child(nhanVien.getMaNV())
                         .setValue(nhanVien).addOnCompleteListener(new OnCompleteListener<Void>() {
@@ -160,7 +175,6 @@ public class AddOrEditStaffFragment extends BaseFragment {
                                 if (task.isSuccessful()) {
                                     showProgressDialog(false);
                                     showMessage("Successful");
-                                    goToStaffFragment();
                                 }
                             }
                         }).addOnFailureListener(new OnFailureListener() {
@@ -171,13 +185,29 @@ public class AddOrEditStaffFragment extends BaseFragment {
                             }
                         });
             }
-        }).addOnFailureListener(new OnFailureListener() {
+
+    private void createAuthUser(NhanVien nhanVien ) {
+        FirebaseAuth.getInstance().createUserWithEmailAndPassword(nhanVien.getEmail(), nhanVien.getPassword()).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
             @Override
-            public void onFailure(@NonNull Exception e) {
-                showProgressDialog(false);
-                showMessage(e.getMessage());
+            public void onComplete(@NonNull Task<AuthResult> task) {
+                sendMessageChangePassword(nhanVien.getEmail());
             }
         });
+    }
+
+    private void sendMessageChangePassword(String email){
+        FirebaseAuth auth = FirebaseAuth.getInstance();
+
+        auth.sendPasswordResetEmail(email)
+                .addOnCompleteListener(new OnCompleteListener<Void>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Void> task) {
+                        if (task.isSuccessful()) {
+                            showMessage(requireActivity().getString(R.string.send_email_change_password));
+                            goToStaffFragment();
+                        }
+                    }
+                });
     }
 
     private void updateStaff() {
@@ -218,17 +248,18 @@ public class AddOrEditStaffFragment extends BaseFragment {
         nhanVien.setHoTen(addOrEditStaffFragment.txtHoTen.getText().toString());
         nhanVien.setEmail(addOrEditStaffFragment.txtEmail.getText().toString());
         nhanVien.setDiaChi(addOrEditStaffFragment.tvAddStaffAddress.getText().toString());
-        nhanVien.setSDT(addOrEditStaffFragment.txtPhone.getText().toString());
 
+        //set loai tai khoan:
+        //type = 1 la admin
+        //type = 2 la nhan vien
         int type = 1;
-        if (addOrEditStaffFragment.spnTypeStaff.getSelectedItem().toString().equals(getResources().getString(R.string.sales_agent))) {
+        if (addOrEditStaffFragment.spnTypeStaff.getSelectedItem().toString().equals(getResources().getString(R.string.admin))) {
             type = 1;
-        } else if (addOrEditStaffFragment.spnTypeStaff.getSelectedItem().toString().equals(getResources().getString(R.string.supervisory_staff))) {
-            type = 2;
         }  else {
-            type = 3;
+            type = 2;
         }
         nhanVien.setLoaiNhanVien(type);
+        nhanVien.setPassword("12345678");
         return nhanVien;
     }
 

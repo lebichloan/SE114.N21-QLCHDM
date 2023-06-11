@@ -88,7 +88,7 @@ public class Login extends AppCompatActivity {
 //                                        BottomNavigation
 //                                        BottomNavigationNhanVien
                                         if (emailVerified) {
-                                            startActivity(new Intent(Login.this, BottomNavigation.class));
+                                            startActivity(new Intent(Login.this, admin_QLNhanVien.class));
                                         }  else {
                                             startActivity(new Intent(Login.this, BottomNavigation.class));
                                         }

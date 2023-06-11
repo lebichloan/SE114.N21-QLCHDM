@@ -45,7 +45,7 @@
             android:name=".ViewModels.admin_QLHoaDon"
             android:exported="false" />
         <activity
-            android:name=".ViewModels.admin_QLNhanVien"
+            android:name=".ViewModels.Login"
             android:exported="true" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -111,7 +111,7 @@
             android:name=".ViewModels.CustomerActivity"
             android:exported="false" />
         <activity
-            android:name=".ViewModels.Login"
+            android:name=".ViewModels.admin_QLNhanVien"
             android:exported="true">
 
         </activity>

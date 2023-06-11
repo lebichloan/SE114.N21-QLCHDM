@@ -38,12 +38,17 @@ public class StaffAdapter extends RecyclerView.Adapter<StaffAdapter.StaffViewHol
         if (staff == null) {
             return;
         }
-        GlideUtils.loadUrl(staff.getLinkAvt(), holder.itemStaffBinding.imgStaff);
 
         holder.itemStaffBinding.tvStaffName.setText(staff.getHoTen());
         holder.itemStaffBinding.tvStaffPhone.setText(staff.getSDT());
         holder.itemStaffBinding.tvStaffEmail.setText(staff.getEmail());
         holder.itemStaffBinding.tvStaffAddress.setText(staff.getDiaChi());
+
+        if (staff.getLoaiNhanVien() == 1){
+            holder.itemStaffBinding.tvStaffPhone.setText("Admin");
+        }else{
+            holder.itemStaffBinding.tvStaffPhone.setText("Nhan Vien");
+        }
 
         holder.itemStaffBinding.imgEdit.setOnClickListener(v -> IOnManagerStaffListener.onClickUpdateStaff(staff));
         holder.itemStaffBinding.imgDelete.setOnClickListener(v -> IOnManagerStaffListener.onClickDeleteStaff(staff));

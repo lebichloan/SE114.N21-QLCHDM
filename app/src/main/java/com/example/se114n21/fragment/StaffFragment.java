@@ -111,7 +111,7 @@ public class StaffFragment extends BaseFragment {
     }
 
     private void initRecyclerView() {
-        fragmentStaffBinding.rcvStaff.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
+        fragmentStaffBinding.rcvStaff.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.VERTICAL, false));
         fragmentStaffBinding.rcvStaff.setAdapter(staffAdapter);
     }
 
@@ -133,6 +133,8 @@ public class StaffFragment extends BaseFragment {
     private void deleteStaffByIDStaff(String maNV) {
         FirebaseDatabase database = FirebaseDatabase.getInstance();
         database.getReference("Staff").child(maNV).removeValue();
+
+
     }
 
     public void loadData(String key) {
